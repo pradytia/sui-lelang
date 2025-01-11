@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import {
   View,
   Text,
@@ -12,14 +12,18 @@ import NetInfo from '@react-native-community/netinfo';
 import Styles from '../../styles';
 import Colors from '../../styles/colors';
 import realm from '../../database';
-import { useNavigation } from '@react-navigation/native';
+import { useNavigation, useRoute } from '@react-navigation/native';
 import { useSelector, useDispatch } from 'react-redux';
 import { RootState } from '../../stores';
 import { useMutation } from '@apollo/client';
-import { ADD_PRODUCT } from '../../services/graphql';
+import { ADD_PRODUCT, EDIT_PRODUCT } from '../../services/graphql';
 
 const SellScreen = () => {
   const navigation = useNavigation<any>();
+  const route = useRoute<any>();
+  const mode = route.params?.mode || 'add'; 
+  const product = route.params?.product?.item || null;
+
   const [formValues, setFormValues] = useState({
     productName: '',
     price: '',
@@ -27,13 +31,28 @@ const SellScreen = () => {
     description: '',
   });
   const [disabled, setDisabled] = useState(false);
+  const [isEditMode, setIsEditMode] = useState(false);
+  const [editingProductId, setEditingProductId] = useState<string | null>(null);
   const [addProduct] = useMutation(ADD_PRODUCT);
+  const [editProduct] = useMutation(EDIT_PRODUCT);
 
   const profile = useSelector((state: RootState) => state.profile);
 
   const handleChange = (name: string, value: string) => {
     setFormValues({ ...formValues, [name]: value });
   };
+
+  useEffect(() => {
+    if (mode === 'edit' && product) {
+      setIsEditMode(true);
+      setFormValues({
+        productName: product.productName || '',
+        price: product.price || '',
+        imageUrl: product.imageUrl || '',
+        description: product.description || '',
+      });
+    }
+  }, [mode, product]);
 
   const handleSubmit = async () => {
     if (!formValues.productName || !formValues.price || !formValues.imageUrl || !formValues.description) {
@@ -45,50 +64,91 @@ const SellScreen = () => {
 
     const connection = await NetInfo.fetch();
     if (connection.isConnected) {
-      // Jika online, hit ke BE
       try {
-        const { data } = await addProduct({
-          variables: {
-            productName: formValues.productName,
-            price: formValues.price,
-            imageUrl: formValues.imageUrl,
-            description: formValues.description,
-            createdBy: profile.userName,
-            sellerId: profile.id
-          },
-        });
-  
-        if (data.addProduct) {
-          Alert.alert('Success', 'Product listed successfully');
-          navigation.navigate("Dashboard");
+        if (isEditMode && mode === 'edit') {
+          console.log('masuk edit')
+          const { data } = await editProduct({
+            variables: {
+              id: product.id,
+              productName: formValues.productName,
+              price: formValues.price,
+              imageUrl: formValues.imageUrl,
+              description: formValues.description,
+            },
+          });
+
+          console.log('data edit product', data);
+          if (data.editProduct) {
+            Alert.alert('Success', 'Product updated successfully');
+            navigation.navigate('Dashboard');
+          } else {
+            Alert.alert('Error', 'Failed to update product');
+          }
         } else {
-          Alert.alert('Error', 'Failed to list product');
+          const { data } = await addProduct({
+            variables: {
+              productName: formValues.productName,
+              price: formValues.price,
+              imageUrl: formValues.imageUrl,
+              description: formValues.description,
+              createdBy: profile.userName,
+              sellerId: profile.id,
+            },
+          });
+
+          if (data.addProduct) {
+            Alert.alert('Success', 'Product listed successfully');
+            navigation.navigate('Dashboard');
+          } else {
+            Alert.alert('Error', 'Failed to list product');
+          }
         }
       } catch (error) {
         Alert.alert('Error', 'An error occurred. Please try again.');
       }
     } else {
-      // Jika offline, simpan ke Realm
       try {
         realm.write(() => {
           realm.create('Product', {
-            id: Date.now(),
+            id: isEditMode ? editingProductId : Date.now(),
             productName: formValues.productName,
             price: formValues.price,
             imageUrl: formValues.imageUrl,
             description: formValues.description,
-            createdBy: profile.userName
+            createdBy: profile.userName,
           });
         });
         Alert.alert('Offline', 'Product saved locally');
-        navigation.navigate("Dashboard")
+        navigation.navigate('Dashboard');
       } catch (error) {
-        console.log('error ', error);
         Alert.alert('Error', 'Failed to save product locally');
       }
     }
 
     setDisabled(false);
+    resetForm();
+  };
+
+  const resetForm = () => {
+    setFormValues({
+      productName: '',
+      price: '',
+      imageUrl: '',
+      description: '',
+    });
+    setIsEditMode(false);
+    setEditingProductId(null);
+  };
+
+  const populateFormForEdit = (product: any) => {
+    setFormValues({
+      productName: product.productName,
+      price: product.price,
+      imageUrl: product.imageUrl,
+      description: product.description,
+    });
+    setEditingProductId(product.id);
+    setIsEditMode(true);
   };
 
   return (
@@ -160,7 +220,9 @@ const SellScreen = () => {
                   onPress={handleSubmit}
                 >
                   <View style={Styles.button}>
-                    <Text style={Styles.buttonText}>Sell product</Text>
+                    <Text style={Styles.buttonText}>
+                      {mode === 'edit' ? 'Edit Product' : 'Sell Product'}
+                    </Text>
                   </View>
                 </TouchableHighlight>
               )}
@@ -183,10 +245,6 @@ interface FormRowProps {
 
 const FormRow: React.FC<FormRowProps> = ({
   icon,
-  placeholder,
-  keyboardType = 'default',
-  multiline = false,
-  numberOfLines = 1,
   renderInput,
 }) => (
   <View style={Styles.formRow}>

@@ -15,7 +15,7 @@ import Styles from '../../../styles';
 import Colors from '../../../styles/colors';
 import { RootState } from '../../../stores';
 import { useMutation } from '@apollo/client';
-import { SUBMIT_BID } from '../../../services/graphql';
+import { DELETE_PRODUCT, SUBMIT_BID } from '../../../services/graphql';
 
 const styles = Styles;
 const colors = Colors;
@@ -26,10 +26,29 @@ const DetailBidScreen = () => {
   const item:any = route.params;
   const profile = useSelector((state: RootState) => state.profile);
   const [submitBidMutation, { loading }] = useMutation(SUBMIT_BID);
+  const [deleteProduct] = useMutation(DELETE_PRODUCT);
 
   const [bidAmount, setBidAmount] = useState('');
   const [error, setError] = useState('');
 
+
+  const handleDeleteProduct = async(id:string) => {
+
+    try {
+      const response = await deleteProduct({ variables: { id } });
+
+      console.log('respon ', response);
+      if (response.data.deleteProduct) {
+        Alert.alert('Delete Success');
+        navigation.navigate('Dashboard'); 
+      } else {
+        Alert.alert('Delete Failed');
+      }
+    } catch (error) {
+      Alert.alert('Error', 'Something went wrong. Please try again.');
+      console.error(error);
+    }
+  };
 
   const submitBid = async(bidPrice:any) => {
     const bidValue = parseInt(bidPrice, 10);
@@ -58,8 +77,6 @@ const DetailBidScreen = () => {
       "priceBid": bidPrice,
       "productName": item.item.productName,
     };
-
-    console.log('data submit', dataSubmit)
 
     try {
       const response = await submitBidMutation({
@@ -110,7 +127,7 @@ const DetailBidScreen = () => {
             <Text>{'\n' + item.item.description}</Text>
           </View>
           {
-            profile.role === 'Buyer' && (
+            profile.role === 'Buyer' ?
               <View>
                 <View style={styles.center}>
                   <Text style={styles.title}>Bid this product</Text>
@@ -147,7 +164,39 @@ const DetailBidScreen = () => {
                     </TouchableHighlight>
                 </View>
               </View>
-            )
+            :
+            <>
+            <View style={styles.formRowButtons}>
+              <TouchableHighlight
+                onPress={() => {
+                  navigation.navigate('Sell', { mode: 'edit', product:item })
+                }}
+                style={styles.buttonTouchForm}
+                underlayColor={colors.accent}
+              >
+                <View style={styles.button}>
+                  <Text style={styles.buttonText}>
+                    Edit this product
+                  </Text>
+                </View>
+              </TouchableHighlight>
+            </View>
+            <View style={styles.formRowButtons}>
+              <TouchableHighlight
+                onPress={() => {
+                  handleDeleteProduct(item.item.id)
+                }}
+                style={styles.buttonTouchForm}
+                underlayColor={colors.accent}
+              >
+                <View style={styles.button}>
+                  <Text style={styles.buttonText}>
+                    Delete this product
+                  </Text>
+                </View>
+              </TouchableHighlight>
+            </View>
+            </>
           }
         </View>
     </View>
@@ -155,6 +204,5 @@ const DetailBidScreen = () => {
 </View>
  )
 };
-
 
 export default DetailBidScreen;

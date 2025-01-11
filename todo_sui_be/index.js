@@ -93,7 +93,9 @@ const typeDefs = gql`
   type Mutation {
     register(email: String!, password: String!, username: String!, role: String!): User
     login(email: String!, password: String!): LoginResponse
-    addProduct(productName: String!, price: String!, imageUrl: String!, description: String!, createdBy: String!,sellerId: ID!): Product
+    addProduct(productName: String!, price: String!, imageUrl: String!, description: String!, createdBy: String!,sellerId: ID!): Product!
+    editProduct(id: ID!, productName: String, price: String, imageUrl: String, description: String): Product!
+    deleteProduct(id: ID!): Boolean!
     submitBid(productName: String!,price: String!,priceBid: String!,productId: ID!, sellerId: ID!, buyerId: ID!,description: String!,imageUrl: String!,createdBy: String!): Bid!
   }
 
@@ -210,6 +212,37 @@ const resolvers = {
       catch (error) {
         console.error('Error submitting product :', error);
         throw new Error('Failed to submit product ');
+      }
+    },
+    editProduct: async (_, { id, productName, price, imageUrl, description }, { user }) => {
+      if (!user) throw new Error('Access Denied');
+      try {
+        const product = await Product.findById(id);
+        if (!product) throw new Error('Product not found');
+
+        if (productName) product.productName = productName;
+        if (price) product.price = price;
+        if (imageUrl) product.imageUrl = imageUrl;
+        if (description) product.description = description;
+
+        await product.save();
+        return product;
+      } catch (error) {
+        console.error('Error editing product:', error);
+        throw new Error('Failed to edit product');
+      }
+    },
+    deleteProduct: async (_, { id }, { user }) => {
+      if (!user) throw new Error('Access Denied');
+      try {
+        const product = await Product.findById(id);
+        if (!product) throw new Error('Product not found');
+        
+        await Product.findByIdAndDelete(id);
+        return true;
+      } catch (error) {
+        console.error('Error deleting product:', error);
+        throw new Error('Failed to delete product');
       }
     },
     submitBid: async (_, { productName, price, priceBid, productId,sellerId, buyerId, description, imageUrl, createdBy }, { user }) => {

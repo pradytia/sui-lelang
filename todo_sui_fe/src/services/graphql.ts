@@ -121,3 +121,36 @@ mutation SubmitBid(
 }
 `;
 
+export const EDIT_PRODUCT = gql`
+  mutation EditProduct(
+    $id: ID!
+    $productName: String
+    $price: String
+    $imageUrl: String
+    $description: String
+  ) {
+    editProduct(
+      id: $id
+      productName: $productName
+      price: $price
+      imageUrl: $imageUrl
+      description: $description
+    ) {
+      id
+      productName
+      price
+      imageUrl
+      description
+      createdBy
+      sellerId
+    }
+  }
+`;
+
+export const DELETE_PRODUCT = gql`
+  mutation DeleteProduct($id: ID!) {
+    deleteProduct(id: $id)
+  }
+`;
+
+

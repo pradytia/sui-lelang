@@ -177,6 +177,11 @@ import {
       borderRadius:4,
       alignItems: 'center',
     },
+    buttonDeleteForm:{
+      backgroundColor:'red',
+      borderRadius:4,
+      alignItems: 'center',
+    },
     // button:{
     //   padding:30,
     //   paddingTop:10,

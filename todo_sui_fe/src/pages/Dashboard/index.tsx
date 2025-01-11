@@ -39,6 +39,10 @@ const DashboardScreen = () => {
   const saveToRealm = async (products: any) => {
     realm.write(() => {
       products.forEach((product:any) => {
+        const existingProduct = realm.objects('Product').filtered('id == $0', product.id);
+        if (existingProduct.length > 0) {
+          realm.delete(existingProduct); 
+        }
         realm.create('Product', product, Realm.UpdateMode.Modified);
       });
     });
@@ -123,12 +127,14 @@ const DashboardScreen = () => {
           emptyData()
       }
       {profile.role === 'Seller' && (
+        <>
         <TouchableOpacity
           style={styles.addButton}
-          onPress={() => navigation.navigate('Sell')}
+          onPress={() => navigation.navigate('Sell', { mode: 'add' })}
         >
           <Icon name="add" size={24} color="#fff" />
         </TouchableOpacity>
+        </>
       )}
     </View>
   );
