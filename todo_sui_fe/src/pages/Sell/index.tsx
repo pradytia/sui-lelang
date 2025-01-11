@@ -54,6 +54,7 @@ const SellScreen = () => {
             imageUrl: formValues.imageUrl,
             description: formValues.description,
             createdBy: profile.userName,
+            sellerId: profile.id
           },
         });
   

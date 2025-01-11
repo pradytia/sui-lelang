@@ -1,11 +1,10 @@
 import Realm from 'realm';
 import { UserSchema } from './user';
-import { TodoListSchema } from './todo';
 import { ProductSchema } from './product';
 
 Realm.flags.THROW_ON_GLOBAL_REALM = true;
 const realm = new Realm({
-  schema: [UserSchema, TodoListSchema, ProductSchema], 
+  schema: [UserSchema, ProductSchema], 
   schemaVersion: 1, 
 });
 

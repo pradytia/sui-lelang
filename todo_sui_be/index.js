@@ -7,6 +7,10 @@ const { PubSub } = require('graphql-subscriptions');
 const http = require('http');
 const cors = require('cors');
 
+const generateCustomId = () => {
+  return Math.random().toString(36).substr(2, 9);
+};
+
 const app = express();
 app.use(cors());
 const pubsub = new PubSub();
@@ -14,6 +18,7 @@ const server = http.createServer(app);
 
 // MongoDB Models
 const userSchema = new mongoose.Schema({
+  _id: { type: String, default: generateCustomId },
   email: { type: String, required: true, unique: true },
   password: { type: String, required: true },
   username: { type: String, required: true },
@@ -21,19 +26,23 @@ const userSchema = new mongoose.Schema({
 });
 
 const productSchema = new mongoose.Schema({
+  _id: { type: String, default: generateCustomId },
   productName: String,
   price: String,
   imageUrl: String,
   description: String,
-  description: String,
   createdBy: String,
+  sellerId: { type: String, required: true, unique: true }
 });
 
 const BidSchema = new mongoose.Schema({
+  _id: { type: String, default: generateCustomId },
   productName: { type: String, required: true },
   price:String,
   priceBid:String,
-  productId: { type: mongoose.Schema.Types.ObjectId, required: true },
+  productId:{ type: String, required: true, unique: true },
+  sellerId: { type: String, required: true, unique: true },
+  buyerId:{ type: String, required: true, unique: true },
   description: { type: String, required: true },
   imageUrl: { type: String, required: true },
   createdBy: { type: String, required: true },
@@ -61,6 +70,8 @@ const typeDefs = gql`
     price: String!
     priceBid:  String!
     productId: ID!
+    sellerId: ID!
+    buyerId: ID!
     description: String!
     imageUrl: String!
     createdBy: String!
@@ -76,13 +87,14 @@ const typeDefs = gql`
     imageUrl: String!
     description: String!
     createdBy: String!
+    sellerId: ID!
   }
 
   type Mutation {
     register(email: String!, password: String!, username: String!, role: String!): User
     login(email: String!, password: String!): LoginResponse
-    addProduct(productName: String!, price: String!, imageUrl: String!, description: String!, createdBy: String!): Product
-    submitBid(productName: String!,price: String!,priceBid: String!,productId: ID!,description: String!,imageUrl: String!,createdBy: String!): Bid!
+    addProduct(productName: String!, price: String!, imageUrl: String!, description: String!, createdBy: String!,sellerId: ID!): Product
+    submitBid(productName: String!,price: String!,priceBid: String!,productId: ID!, sellerId: ID!, buyerId: ID!,description: String!,imageUrl: String!,createdBy: String!): Bid!
   }
 
 `;
@@ -91,6 +103,7 @@ const typeDefs = gql`
 const authenticate = (token) => {
   if (!token) throw new Error('Access Denied');
   try {
+    token = token.replace(/"/g, '');
     return jwt.verify(token, 'secret');
   } catch (err) {
     throw new Error('Invalid Token');
@@ -102,20 +115,31 @@ const resolvers = {
   Query: {
     getProducts: async (_, __, { user }) => {
       if (!user) throw new Error('Access Denied');
-      console.log('user data ', user);
       try {
-        const products = await Product.find();
+        let filter = {};
+        if (user.role === 'Seller') {
+          filter = { sellerId:user._id };
+        }
+        const products = await Product.find(filter);
         return products;
       } catch (error) {
         console.error('Error fetching products:', error);
         throw new Error('Failed to fetch products');
       }
     },
-    getBids: async (_, __, { user }) => {
+    getBids: async (_,__, { user }) => {
       if (!user) throw new Error('Access Denied');
-      console.log('user data ', user);
+      let filter = {};
       try {
-        const bids = await Bid.find();
+
+        if (user.role === 'Seller') {
+          filter = { sellerId: user._id };
+        } else if (user.role === 'Buyer') {
+          filter = { buyerId: user._id};
+        } else {
+          throw new Error('Invalid role');
+        }
+        const bids = await Bid.find(filter);
         return bids;
       } catch (error) {
         console.error('Error fetching bids:', error);
@@ -169,7 +193,7 @@ const resolvers = {
         },
       };
     },
-    addProduct: async (_, { productName, price, imageUrl, description, createdBy }, { user }) => {
+    addProduct: async (_, { productName, price, imageUrl, description, createdBy,sellerId }, { user }) => {
       if (!user) throw new Error('Access Denied');
       try {
       const product = new Product({
@@ -178,6 +202,7 @@ const resolvers = {
         imageUrl,
         description,
         createdBy,
+        sellerId
       });
       await product.save();
       return product;
@@ -187,7 +212,7 @@ const resolvers = {
         throw new Error('Failed to submit product ');
       }
     },
-    submitBid: async (_, { productName, price, priceBid, productId, description, imageUrl, createdBy }, { user }) => {
+    submitBid: async (_, { productName, price, priceBid, productId,sellerId, buyerId, description, imageUrl, createdBy }, { user }) => {
       if (!user) throw new Error('Access Denied');
       try {
         const newBid = new Bid({
@@ -195,6 +220,8 @@ const resolvers = {
           price,
           priceBid,
           productId,
+          sellerId,
+          buyerId,
           description,
           imageUrl,
           createdBy,
@@ -220,7 +247,7 @@ const apolloServer = new ApolloServer({
   },
   debug: true,
   context: ({ req }) => {
-    const token = req.headers['authorization']?.split(' ')[1];
+    const token = req.headers['authorization'];
     const user = token ? authenticate(token) : null;
     return { user };
   },

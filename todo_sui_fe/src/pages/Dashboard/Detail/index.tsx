@@ -51,11 +51,15 @@ const DetailBidScreen = () => {
       "createdBy": item.item.createdBy,
       "description": item.item.description,
       "productId": item.item.id,
+      "sellerId": item.item.sellerId,
+      "buyerId": profile.id,
       "imageUrl": item.item.imageUrl,
       "price": item.item.price,
       "priceBid": bidPrice,
       "productName": item.item.productName,
     };
+
+    console.log('data submit', dataSubmit)
 
     try {
       const response = await submitBidMutation({
@@ -105,42 +109,46 @@ const DetailBidScreen = () => {
             </Text>
             <Text>{'\n' + item.item.description}</Text>
           </View>
-          <View>
-            <View style={styles.center}>
-              <Text style={styles.title}>Bid this product</Text>
-            </View>
-            <View style={[styles.formRow]}>
-              <View style={styles.formLabel}>
-                <Text style={styles.labelText}>
-                  <Icon name="arrow-up" size={20} />
-                </Text>
-              </View>
-              <View style={styles.formInputControl}>
-              <TextInput
-                style={styles.formInputText}
-                placeholder="Enter your price..."
-                autoCorrect={false}
-                onChangeText={(price) => setBidAmount(price)}
-                value={bidAmount}
-              />
-              </View>
-            </View>
-            <View style={styles.formRowButtons}>
-                <TouchableHighlight
-                  onPress={() => {
-                    submitBid(bidAmount)
-                  }}
-                  style={styles.buttonTouchForm}
-                  underlayColor={colors.accent}
-                >
-                  <View style={styles.button}>
-                    <Text style={styles.buttonText}>
-                      Bid this product
+          {
+            profile.role === 'Buyer' && (
+              <View>
+                <View style={styles.center}>
+                  <Text style={styles.title}>Bid this product</Text>
+                </View>
+                <View style={[styles.formRow]}>
+                  <View style={styles.formLabel}>
+                    <Text style={styles.labelText}>
+                      <Icon name="arrow-up" size={20} />
                     </Text>
                   </View>
-                </TouchableHighlight>
-            </View>
-          </View>
+                  <View style={styles.formInputControl}>
+                  <TextInput
+                    style={styles.formInputText}
+                    placeholder="Enter your price..."
+                    autoCorrect={false}
+                    onChangeText={(price) => setBidAmount(price)}
+                    value={bidAmount}
+                  />
+                  </View>
+                </View>
+                <View style={styles.formRowButtons}>
+                    <TouchableHighlight
+                      onPress={() => {
+                        submitBid(bidAmount)
+                      }}
+                      style={styles.buttonTouchForm}
+                      underlayColor={colors.accent}
+                    >
+                      <View style={styles.button}>
+                        <Text style={styles.buttonText}>
+                          Bid this product
+                        </Text>
+                      </View>
+                    </TouchableHighlight>
+                </View>
+              </View>
+            )
+          }
         </View>
     </View>
   </ScrollView>

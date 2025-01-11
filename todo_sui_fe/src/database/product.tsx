@@ -7,6 +7,7 @@ export const ProductSchema = {
       imageUrl: 'string',
       description: 'string',
       createdBy: 'string',
+      sellerId: 'string',
     },
     primaryKey: 'id',
   };

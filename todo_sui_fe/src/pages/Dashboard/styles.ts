@@ -54,6 +54,15 @@ const styles = StyleSheet.create({
       shadowRadius: 3,
       elevation: 5,
     },
+    centeredContainer: {
+      flex: 1, 
+      justifyContent: 'center', 
+      alignItems: 'center', 
+    },
+    centeredText: {
+      fontSize: 16, 
+      textAlign: 'center',
+    },
 });
 
 export default styles;

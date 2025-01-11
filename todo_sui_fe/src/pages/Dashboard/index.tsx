@@ -25,6 +25,7 @@ interface AuctionItem {
   price: string;
   imageUrl: string;
   createdBy: string;
+  sellerId: string;
 }
 
 
@@ -75,6 +76,14 @@ const DashboardScreen = () => {
   if (loading) return <Text>Loading...</Text>;
   if (error) return <Text>Error: {error.message}</Text>;
 
+  const emptyData = () => {
+    return (
+      <View style={styles.centeredContainer}>
+        <Text style={styles.centeredText}>Semua Data Telah Tampil</Text>
+      </View>
+    );
+  }
+
   const renderItem = ({ item }: { item: AuctionItem }) => (
     <TouchableHighlight underlayColor="rgba(10, 9, 9, 0.21)">
       <View style={styles.itemContainer}>
@@ -103,11 +112,16 @@ const DashboardScreen = () => {
 
   return (
     <View style={styles.container}>
-      <FlatList
-        data={product}
-        keyExtractor={(item) => item.id.toString()}
-        renderItem={renderItem}
-      />
+      {
+        product.length > 0 ? 
+          <FlatList
+          data={product}
+          keyExtractor={(item) => item.id.toString()}
+          renderItem={renderItem}
+        />
+        :
+          emptyData()
+      }
       {profile.role === 'Seller' && (
         <TouchableOpacity
           style={styles.addButton}

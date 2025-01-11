@@ -34,6 +34,7 @@ export const ADD_PRODUCT = gql`
     $imageUrl: String!
     $description: String!
     $createdBy: String!
+    $sellerId: ID!
   ) {
     addProduct(
       productName: $productName
@@ -41,6 +42,7 @@ export const ADD_PRODUCT = gql`
       imageUrl: $imageUrl
       description: $description
       createdBy: $createdBy
+      sellerId: $sellerId
     ) {
       id
       productName
@@ -48,6 +50,7 @@ export const ADD_PRODUCT = gql`
       imageUrl
       description
       createdBy
+      sellerId
     }
   }
 `;
@@ -61,6 +64,7 @@ export const GET_PRODUCTS = gql`
       imageUrl
       description
       createdBy
+      sellerId
     }
   }
 `;
@@ -85,6 +89,8 @@ mutation SubmitBid(
   $createdBy: String!
   $description: String!
   $productId: ID!
+  $sellerId: ID!
+  $buyerId:ID!
   $imageUrl: String!
   $price: String!
   $priceBid: String!
@@ -94,6 +100,8 @@ mutation SubmitBid(
       createdBy: $createdBy
       description: $description
       productId: $productId
+      sellerId: $sellerId
+      buyerId: $buyerId
       imageUrl: $imageUrl
       price: $price
       priceBid: $priceBid
@@ -107,6 +115,8 @@ mutation SubmitBid(
       imageUrl
       description
       createdBy
+      sellerId
+      buyerId
   }
 }
 `;
