@@ -100,7 +100,9 @@ const authenticate = (token) => {
 // Resolvers
 const resolvers = {
   Query: {
-    getProducts: async () => {
+    getProducts: async (_, __, { user }) => {
+      if (!user) throw new Error('Access Denied');
+      console.log('user data ', user);
       try {
         const products = await Product.find();
         return products;
@@ -109,7 +111,9 @@ const resolvers = {
         throw new Error('Failed to fetch products');
       }
     },
-    getBids:async () => {
+    getBids: async (_, __, { user }) => {
+      if (!user) throw new Error('Access Denied');
+      console.log('user data ', user);
       try {
         const bids = await Bid.find();
         return bids;
@@ -165,7 +169,9 @@ const resolvers = {
         },
       };
     },
-    addProduct: async (_, { productName, price, imageUrl, description, createdBy }) => {
+    addProduct: async (_, { productName, price, imageUrl, description, createdBy }, { user }) => {
+      if (!user) throw new Error('Access Denied');
+      try {
       const product = new Product({
         productName,
         price,
@@ -175,8 +181,14 @@ const resolvers = {
       });
       await product.save();
       return product;
+      }
+      catch (error) {
+        console.error('Error submitting product :', error);
+        throw new Error('Failed to submit product ');
+      }
     },
-    submitBid: async (_, { productName,price, priceBid, productId, description, imageUrl, createdBy }) => {
+    submitBid: async (_, { productName, price, priceBid, productId, description, imageUrl, createdBy }, { user }) => {
+      if (!user) throw new Error('Access Denied');
       try {
         const newBid = new Bid({
           productName,
@@ -207,11 +219,11 @@ const apolloServer = new ApolloServer({
     return err;
   },
   debug: true,
-  // context: ({ req }) => {
-  //   const token = req.headers['authorization'];
-  //   const user = token ? authenticate(token) : null;
-  //   return { user };
-  // },
+  context: ({ req }) => {
+    const token = req.headers['authorization']?.split(' ')[1];
+    const user = token ? authenticate(token) : null;
+    return { user };
+  },
 });
 
 const startServer = async () => {
