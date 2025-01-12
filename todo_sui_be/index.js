@@ -32,7 +32,7 @@ const productSchema = new mongoose.Schema({
   imageUrl: String,
   description: String,
   createdBy: String,
-  sellerId: { type: String, required: true, unique: true }
+  sellerId: { type: String, required: true }
 });
 
 const BidSchema = new mongoose.Schema({
@@ -40,9 +40,9 @@ const BidSchema = new mongoose.Schema({
   productName: { type: String, required: true },
   price:String,
   priceBid:String,
-  productId:{ type: String, required: true, unique: true },
-  sellerId: { type: String, required: true, unique: true },
-  buyerId:{ type: String, required: true, unique: true },
+  productId:{ type: String, required: true },
+  sellerId: { type: String, required: true },
+  buyerId:{ type: String, required: true },
   description: { type: String, required: true },
   imageUrl: { type: String, required: true },
   createdBy: { type: String, required: true },
